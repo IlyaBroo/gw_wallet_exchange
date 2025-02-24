@@ -1,0 +1,273 @@
+definitions:
+  handlers.DepositRequest:
+    properties:
+      amount:
+        type: number
+      currency:
+        type: string
+    type: object
+  handlers.DepositResponse:
+    properties:
+      message:
+        type: string
+      new_balance:
+        $ref: '#/definitions/storages.Balance'
+    type: object
+  handlers.ErrorResponse:
+    type: object
+  handlers.ExchangeForCurrencyReq:
+    properties:
+      amount:
+        type: number
+      from_currency:
+        type: string
+      to_currency:
+        type: string
+    type: object
+  handlers.ExchangeResponse:
+    properties:
+      rates:
+        additionalProperties:
+          type: number
+        type: object
+    type: object
+  handlers.ExchangeResponseForCurrency:
+    properties:
+      amount:
+        type: number
+      message:
+        type: string
+      new_balance:
+        additionalProperties:
+          type: number
+        type: object
+    type: object
+  handlers.WithdrawRequest:
+    properties:
+      amount:
+        type: number
+      currency:
+        type: string
+    type: object
+  handlers.WithdrawResponse:
+    properties:
+      message:
+        type: string
+      new_balance:
+        $ref: '#/definitions/storages.Balance'
+    type: object
+  storages.Balance:
+    properties:
+      EURO:
+        type: number
+      RUB:
+        type: number
+      USD:
+        type: number
+    type: object
+  storages.RegisterRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /balance:
+    get:
+      consumes:
+      - application/json
+      description: Позволяет пользователю получить информацию о своем балансе по всем
+        валютам.
+      parameters:
+      - description: Bearer JWT_TOKEN
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/storages.Balance'
+        "500":
+          description: Could not get balance
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Получение баланса пользователя
+      tags:
+      - wallet
+  /deposit:
+    post:
+      consumes:
+      - application/json
+      description: Позволяет пользователю пополнить свой счет. Проверяется корректность
+        суммы и валюты. Обновляется баланс пользователя в базе данных.
+      parameters:
+      - description: Bearer JWT_TOKEN
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Данные для пополнения счета
+        in: body
+        name: deposit
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.DepositRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.DepositResponse'
+        "400":
+          description: Invalid amount or currency
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Error getting balance from db
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Пополнение счета
+      tags:
+      - wallet
+  /exchange:
+    post:
+      consumes:
+      - application/json
+      description: Позволяет обменять одну валюту на другую. Проверяет наличие средств
+        для обмена и обновляет баланс пользователя.
+      parameters:
+      - description: Bearer JWT_TOKEN
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Данные для обмена валют
+        in: body
+        name: exchange
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.ExchangeForCurrencyReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully exchanged currency
+          schema:
+            $ref: '#/definitions/handlers.ExchangeResponseForCurrency'
+        "400":
+          description: Insufficient funds or invalid amount
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Error exchanging currency
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Обмен валют
+      tags:
+      - exchange
+  /rates:
+    get:
+      consumes:
+      - application/json
+      description: Позволяет получить актуальные курсы валют из внешнего gRPC-сервиса.
+      parameters:
+      - description: Bearer JWT_TOKEN
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'rates:'
+          schema:
+            $ref: '#/definitions/handlers.ExchangeResponse'
+        "500":
+          description: Failed to retrieve exchange rates
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Получение курсов валют
+      tags:
+      - exchange
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Позволяет зарегистрировать нового пользователя. Проверяется уникальность
+        имени пользователя и адреса электронной почты. Пароль должен быть зашифрован
+        перед сохранением в базе данных.
+      parameters:
+      - description: Данные для регистрации пользователя
+        in: body
+        name: register
+        required: true
+        schema:
+          $ref: '#/definitions/storages.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User  registered successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Could not create user
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Регистрация пользователя
+      tags:
+      - auth
+  /withdraw:
+    post:
+      consumes:
+      - application/json
+      description: Позволяет пользователю вывести средства со своего счета. Проверяется
+        наличие достаточного количества средств и корректность суммы.
+      parameters:
+      - description: Bearer JWT_TOKEN
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Данные для вывода средств
+        in: body
+        name: withdraw
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.WithdrawRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.WithdrawResponse'
+        "400":
+          description: Insufficient funds or invalid amount
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Error getting balance from db
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Вывод средств
+      tags:
+      - wallet
+swagger: "2.0"

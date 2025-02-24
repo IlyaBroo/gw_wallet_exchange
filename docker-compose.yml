@@ -1,0 +1,109 @@
+version: '3.8'
+networks:
+  test:
+    driver: bridge
+
+services:
+  db:
+    container_name: postgres_db_1
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: ${PG_DB}
+    ports:
+      - ${PG_PORT}
+    networks:
+      - test
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    command: 
+      - "postgres"
+      - "-c"
+      - "max_connections=1000"
+      - "-c"
+      - "shared_buffers=1GB"
+      - "-c"
+      - "effective_cache_size=4GB"
+      - "-c"
+      - "work_mem=16MB"
+      - "-c"
+      - "maintenance_work_mem=128MB"
+  db2:
+    container_name: postgres_db_2
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: ${PG2_USER}
+      POSTGRES_PASSWORD: ${PG2_PASSWORD}
+      POSTGRES_DB: ${PG2_DB}
+      sslmode: disable 
+    ports:
+      - "${PG2_PORT}"
+    networks:
+      - test
+    volumes:
+      - db2_data:/var/lib/postgresql/data
+    command: 
+      - "postgres"
+      - "-c"
+      - "max_connections=1000"
+      - "-c"
+      - "shared_buffers=1GB"
+      - "-c"
+      - "effective_cache_size=4GB"
+      - "-c"
+      - "work_mem=16MB"
+      - "-c"
+      - "maintenance_work_mem=128MB"
+  app:
+    container_name: gw-currency-wallet
+    build:
+      context: gw-currency-wallet
+    depends_on:
+      - db
+    ports:
+      - ${APP_PORT}
+    volumes:
+      - ${LOGS_VOLUME_PATH} 
+      - ./docs:/app/docs
+    networks:
+      - test
+  app2:
+    container_name: gw-exchanger
+    build:
+      context: gw-exchanger
+    depends_on:
+      - db2
+    ports:
+      - ${APP2_PORT}
+    volumes:
+      - ${LOGS_VOLUME_PATH} 
+    networks:
+      - test
+  migrate:
+    build:
+      context: .
+      dockerfile: ./dockerfile.migrations
+    command: ["up"]
+    environment:
+      GOOSE_DBSTRING: ${DBSTRING}
+      GOOSE_MIGRATION_DIR: ${MIGRATION_DIR}
+    depends_on:
+      - db
+    networks:
+      - test
+  migrate2:
+    build:
+      context: .
+      dockerfile: ./dockerfile.migrations2
+    command: ["up"]
+    environment:
+      GOOSE_DBSTRING: ${DBSTRING2}
+      GOOSE_MIGRATION_DIR: ${MIGRATION_DIR2}
+    depends_on:
+      - db2
+    networks:
+      - test
+volumes:
+  db_data:  
+  db2_data: 

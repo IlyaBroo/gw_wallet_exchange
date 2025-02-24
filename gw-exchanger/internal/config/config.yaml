@@ -1,0 +1,8 @@
+path: "logs/app.log"
+level: "local"
+source: true
+service_name: "gw-exchanger"
+writer: 
+database_url: "user=CURRENCY_user password=CURRENCY_pass dbname=CURRENCY_db host=db2 port=5432 sslmode=disable"
+app_adr: ":50052"
+cache_ttl: 3

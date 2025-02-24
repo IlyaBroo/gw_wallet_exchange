@@ -1,0 +1,9 @@
+path: "logs/app.log"
+level: "local"
+source: true
+service_name: "gw-currency-wallet"
+writer: 
+database_url: "user=wallet_user password=wallet_pass dbname=wallet_db host=db port=5432 sslmode=disable"
+app_adr: "8080"
+grpc_adr: "gw-exchanger:50052"
+swagger_url: "http://localhost:8080/swagger/doc.json"
