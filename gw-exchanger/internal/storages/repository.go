@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"gw-exchanger/internal/config"
 	"gw-exchanger/internal/logger"
-	"math"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -91,12 +90,12 @@ func (r *Repository) GetRatesForCurrency(ctx context.Context, from, to string) (
 	}
 	var res float32
 	res = 1 / rates[to] * rates[from]
-	res = roundToTwoDecimalPlaces(res)
+	// res = roundToTwoDecimalPlaces(res)
 	r.lg.InfoCtx(ctx, fmt.Sprintf("take rows: %v", rates))
 	return res, nil
 
 }
 
-func roundToTwoDecimalPlaces(value float32) float32 {
-	return float32(math.Round(float64(value)*100) / 100)
-}
+// func roundToTwoDecimalPlaces(value float32) float32 {
+// 	return float32(math.Round(float64(value)*100) / 100)
+// }

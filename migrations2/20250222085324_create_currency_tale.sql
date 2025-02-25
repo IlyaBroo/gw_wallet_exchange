@@ -10,8 +10,8 @@ CREATE TABLE currency_rates_usd (
 
 INSERT INTO currency_rates_usd (currency_code, exchange_rate) VALUES
 ('USD', 1.00),
-('RUB', 0.89),
-('EUR', 1.15);
+('RUB', 0.011337),
+('EUR', 1.05);
 
 -- +goose StatementEnd
 
