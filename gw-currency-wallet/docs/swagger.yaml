@@ -58,7 +58,7 @@ definitions:
     type: object
   storages.Balance:
     properties:
-      EURO:
+      EUR:
         type: number
       RUB:
         type: number
@@ -129,7 +129,7 @@ paths:
           schema:
             $ref: '#/definitions/handlers.DepositResponse'
         "400":
-          description: Invalid amount or currency
+          description: Amount cannot have more than two decimal places
           schema:
             $ref: '#/definitions/handlers.ErrorResponse'
         "500":
@@ -165,7 +165,7 @@ paths:
           schema:
             $ref: '#/definitions/handlers.ExchangeResponseForCurrency'
         "400":
-          description: Insufficient funds or invalid amount
+          description: Amount cannot have more than two decimal places
           schema:
             $ref: '#/definitions/handlers.ErrorResponse'
         "500":
@@ -260,7 +260,7 @@ paths:
           schema:
             $ref: '#/definitions/handlers.WithdrawResponse'
         "400":
-          description: Insufficient funds or invalid amount
+          description: Amount cannot have more than two decimal places
           schema:
             $ref: '#/definitions/handlers.ErrorResponse'
         "500":

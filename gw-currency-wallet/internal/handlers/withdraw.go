@@ -6,11 +6,13 @@ import (
 	"gw-currency-wallet/internal/middleware"
 	"gw-currency-wallet/internal/storages"
 	"net/http"
+
+	"github.com/shopspring/decimal"
 )
 
 type WithdrawRequest struct {
-	Amount   float64 `json:"amount"`
-	Currency string  `json:"currency"`
+	Amount   decimal.Decimal `json:"amount"`
+	Currency string          `json:"currency"`
 }
 type WithdrawResponse struct {
 	Message    string           `json:"message"`
@@ -27,6 +29,7 @@ type WithdrawResponse struct {
 // @Success 200 {object} WithdrawResponse
 // @Failure 400 {object} ErrorResponse "Error decoding WithdrawResponse"
 // @Failure 400 {object} ErrorResponse "Insufficient funds or invalid amount"
+// @Failure 400 {object} ErrorResponse "Amount cannot have more than two decimal places"
 // @Failure 500 {object} ErrorResponse "Error depositing funds"
 // @Failure 500 {object} ErrorResponse "Error getting balance from db"
 // @Router /withdraw [post]
@@ -39,6 +42,14 @@ func (s *ServerWallet) Withdraw(w http.ResponseWriter, r *http.Request) {
 		errRes.message = "Error decoding WithdrawResponse"
 		json.NewEncoder(w).Encode(errRes)
 		http.Error(w, "Error decoding WithdrawResponse", http.StatusBadRequest)
+		return
+	}
+
+	if req.Amount.Exponent() < -2 {
+		s.lg.ErrorCtx(r.Context(), "Amount cannot have more than two decimal places")
+		errRes.message = "Amount cannot have more than two decimal places"
+		json.NewEncoder(w).Encode(errRes)
+		http.Error(w, "Amount cannot have more than two decimal places", http.StatusBadRequest)
 		return
 	}
 

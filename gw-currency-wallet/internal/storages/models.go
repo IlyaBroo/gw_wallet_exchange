@@ -7,16 +7,17 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/shopspring/decimal"
 )
 
 type RepositoryInterface interface {
-	Deposit(user_id int, amount float64, currency string, ctx context.Context) error
-	Withdraw(user_id int, amount float64, currency string, ctx context.Context) error
+	Deposit(user_id int, amount decimal.Decimal, currency string, ctx context.Context) error
+	Withdraw(user_id int, amount decimal.Decimal, currency string, ctx context.Context) error
 	GetBalance(user_id int, ctx context.Context) (Balance, error)
 	CheckUser(username string, email string, ctx context.Context) (bool, error)
 	AddUser(req RegisterRequest, ctx context.Context) error
 	GetUser(username string, ctx context.Context) (User, error)
-	ExchangeForCurrency(ctx context.Context, from, to string, amount float64, kurs float32, user_id int) (map[string]float64, error)
+	ExchangeForCurrency(ctx context.Context, from, to string, amount decimal.Decimal, kurs float32, user_id int) (map[string]decimal.Decimal, error)
 	Close()
 }
 
@@ -50,9 +51,9 @@ type User struct {
 }
 
 type Balance struct {
-	USD float64 `json:"USD"`
-	RUB float64 `json:"RUB"`
-	EUR float64 `json:"EURO"`
+	USD decimal.Decimal `json:"USD"`
+	RUB decimal.Decimal `json:"RUB"`
+	EUR decimal.Decimal `json:"EUR"`
 }
 
 type RegisterRequest struct {

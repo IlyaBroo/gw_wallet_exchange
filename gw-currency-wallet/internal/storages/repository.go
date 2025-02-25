@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/lib/pq"
+	"github.com/shopspring/decimal"
 )
 
 func NewRepository(lg logger.Logger, ctx context.Context, cfg *config.ConfigAdr) RepositoryInterface {
@@ -92,8 +93,8 @@ func (r *Repository) GetBalance(user_id int, ctx context.Context) (Balance, erro
 	return *balance, nil
 }
 
-func (r *Repository) Deposit(user_id int, amount float64, currency string, ctx context.Context) error {
-	queryString := fmt.Sprintf("UPDATE wallets SET %s = %s + $1 WHERE user_id = $2", currency, currency)
+func (r *Repository) Deposit(user_id int, amount decimal.Decimal, currency string, ctx context.Context) error {
+	queryString := fmt.Sprintf("UPDATE wallets SET %s = %s + $1::decimal WHERE user_id = $2", currency, currency)
 	result, err := r.db.Exec(r.ctx, queryString, amount, user_id)
 	if err != nil {
 		r.lg.ErrorCtx(ctx, "func deposit sql query failed")
@@ -108,8 +109,8 @@ func (r *Repository) Deposit(user_id int, amount float64, currency string, ctx c
 	return err
 }
 
-func (r *Repository) Withdraw(user_id int, amount float64, currency string, ctx context.Context) error {
-	queryString := fmt.Sprintf("UPDATE wallets SET %s = %s - $1 WHERE user_id = $2 AND %s >= $3", currency, currency, currency)
+func (r *Repository) Withdraw(user_id int, amount decimal.Decimal, currency string, ctx context.Context) error {
+	queryString := fmt.Sprintf("UPDATE wallets SET %s = %s - $1::decimal WHERE user_id = $2 AND %s >= $3::decimal", currency, currency, currency)
 	result, err := r.db.Exec(ctx, queryString, amount, user_id, amount)
 	rowsAffected := result.RowsAffected()
 	if err != nil {
@@ -124,10 +125,13 @@ func (r *Repository) Withdraw(user_id int, amount float64, currency string, ctx 
 	return nil
 }
 
-func (r *Repository) ExchangeForCurrency(ctx context.Context, from, to string, amount float64, kurs float32, user_id int) (map[string]float64, error) {
-	kurs64 := float64(kurs)
-	queryString := fmt.Sprintf("UPDATE wallets SET %s = %s - $1, %s = %s + ($2::float * $3::float) WHERE user_id = $4 AND %s >= $5", from, from, to, to, from)
-	result, err := r.db.Exec(ctx, queryString, amount, amount, kurs64, user_id, amount)
+func (r *Repository) ExchangeForCurrency(ctx context.Context, from, to string, amount decimal.Decimal, kurs float32, user_id int) (map[string]decimal.Decimal, error) {
+	kursDecimal := decimal.NewFromFloat32(kurs)
+	queryString := fmt.Sprintf(
+		"UPDATE wallets SET %s = %s - $1::decimal, %s = %s + ($2::decimal * $3::decimal) WHERE user_id = $4 AND %s >= $5",
+		from, from, to, to, from,
+	)
+	result, err := r.db.Exec(ctx, queryString, amount, amount, kursDecimal, user_id, amount)
 	if err != nil {
 		r.lg.ErrorCtx(ctx, "func exchangeForCurrency sql query failed")
 		return nil, err
@@ -137,8 +141,8 @@ func (r *Repository) ExchangeForCurrency(ctx context.Context, from, to string, a
 		r.lg.InfoCtx(ctx, "func exchangeForCurrency insufficient funds or wallet with this username not found")
 		return nil, ErrExch
 	}
-	res := make(map[string]float64)
-	var fromvalue, tovalue float64
+	res := make(map[string]decimal.Decimal)
+	var fromvalue, tovalue decimal.Decimal
 	queryString2 := fmt.Sprintf("SELECT %s, %s FROM wallets WHERE user_id = $1", from, to)
 	err = r.db.QueryRow(ctx, queryString2, user_id).Scan(&fromvalue, &tovalue)
 	if err != nil {

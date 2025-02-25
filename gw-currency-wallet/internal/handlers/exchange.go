@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	exchange "github.com/IlyaBroo/exchange_grpc/exchange"
+	"github.com/shopspring/decimal"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -16,15 +17,15 @@ type ExchangeResponse struct {
 }
 
 type ExchangeForCurrencyReq struct {
-	From   string  `json:"from_currency"`
-	To     string  `json:"to_currency"`
-	Amount float64 `json:"amount"`
+	From   string          `json:"from_currency"`
+	To     string          `json:"to_currency"`
+	Amount decimal.Decimal `json:"amount"`
 }
 
 type ExchangeResponseForCurrency struct {
-	Message     string             `json:"message"`
-	Amount      float64            `json:"amount"`
-	New_balance map[string]float64 `json:"new_balance"`
+	Message     string                     `json:"message"`
+	Amount      decimal.Decimal            `json:"amount"`
+	New_balance map[string]decimal.Decimal `json:"new_balance"`
 }
 
 // @Summary Получение курсов валют
@@ -67,6 +68,7 @@ func (s *ServerWallet) ExchangeRates(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} ExchangeResponseForCurrency "Successfully exchanged currency"
 // @Failure 400 {object} ErrorResponse "Error decoding currency request"
 // @Failure 400 {object} ErrorResponse "Insufficient funds or invalid amount"
+// @Failure 400 {object} ErrorResponse "Amount cannot have more than two decimal places"
 // @Failure 500 {object} ErrorResponse "Error fetching exchange rate"
 // @Failure 500 {object} ErrorResponse "Error exchanging currency"
 // @Router /exchange [post]
@@ -85,6 +87,13 @@ func (s *ServerWallet) ExchangeRatesForCurrency(w http.ResponseWriter, r *http.R
 		errRes.message = "Error decoding currency request"
 		json.NewEncoder(w).Encode(errRes)
 		http.Error(w, "Error decoding currency request", http.StatusBadRequest)
+		return
+	}
+	if req.Amount.Exponent() < -2 {
+		s.lg.ErrorCtx(r.Context(), "Amount cannot have more than two decimal places")
+		errRes.message = "Amount cannot have more than two decimal places"
+		json.NewEncoder(w).Encode(errRes)
+		http.Error(w, "Amount cannot have more than two decimal places", http.StatusBadRequest)
 		return
 	}
 	in.FromCurrency = req.From

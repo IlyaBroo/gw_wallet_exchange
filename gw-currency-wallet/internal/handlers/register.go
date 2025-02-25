@@ -29,6 +29,7 @@ func (s *ServerWallet) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		s.lg.ErrorCtx(r.Context(), fmt.Sprintf("Error decoding: %v", err))
 		errRes.message = "Invalid input"
+		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(errRes)
 		http.Error(w, "Invalid input", http.StatusBadRequest)
 		return
@@ -39,6 +40,7 @@ func (s *ServerWallet) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		s.lg.ErrorCtx(r.Context(), fmt.Sprintf("error checking: %v", err))
 		errRes.message = "Internal server error"
 		json.NewEncoder(w).Encode(errRes)
+		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -47,6 +49,7 @@ func (s *ServerWallet) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		s.lg.ErrorCtx(r.Context(), fmt.Sprintf("Username or email already exists"))
 		errRes.message = "Username or email already exists"
 		json.NewEncoder(w).Encode(errRes)
+		w.WriteHeader(http.StatusBadRequest)
 		http.Error(w, "Username or email already exists", http.StatusBadRequest)
 		return
 	}
@@ -56,6 +59,7 @@ func (s *ServerWallet) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		s.lg.ErrorCtx(r.Context(), fmt.Sprintf("Error hashing password: %v", err))
 		errRes.message = "Could not hash password"
 		json.NewEncoder(w).Encode(errRes)
+		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, "Could not hash password", http.StatusInternalServerError)
 		return
 	}
@@ -66,6 +70,7 @@ func (s *ServerWallet) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		s.lg.ErrorCtx(r.Context(), fmt.Sprintf("Error adding user: %v", err))
 		errRes.message = "Could not create user"
 		json.NewEncoder(w).Encode(errRes)
+		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, "Could not create user", http.StatusInternalServerError)
 		return
 	}

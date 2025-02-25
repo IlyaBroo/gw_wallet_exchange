@@ -92,7 +92,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid amount or currency",
+                        "description": "Amount cannot have more than two decimal places",
                         "schema": {
                             "$ref": "#/definitions/handlers.ErrorResponse"
                         }
@@ -145,7 +145,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Insufficient funds or invalid amount",
+                        "description": "Amount cannot have more than two decimal places",
                         "schema": {
                             "$ref": "#/definitions/handlers.ErrorResponse"
                         }
@@ -285,7 +285,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Insufficient funds or invalid amount",
+                        "description": "Amount cannot have more than two decimal places",
                         "schema": {
                             "$ref": "#/definitions/handlers.ErrorResponse"
                         }
@@ -393,7 +393,7 @@ const docTemplate = `{
         "storages.Balance": {
             "type": "object",
             "properties": {
-                "EURO": {
+                "EUR": {
                     "type": "number"
                 },
                 "RUB": {
